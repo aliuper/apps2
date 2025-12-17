@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import os
+import sys
+import traceback
+from datetime import datetime
+from pathlib import Path
 
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivy.properties import StringProperty
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
+from kivy.utils import platform
 
 from kivymd.app import MDApp
 from kivymd.uix.dialog import MDDialog
@@ -21,6 +28,52 @@ class Root(ScreenManager):
     status_text = StringProperty("")
 
 
+def _crash_private_dir() -> Path:
+    if platform == "android":
+        try:
+            from android.storage import app_storage_path  # type: ignore
+
+            return Path(app_storage_path())
+        except Exception:  # noqa: BLE001
+            pass
+    return Path.home() / ".alibaba"
+
+
+def _write_crash_log(text: str) -> str | None:
+    try:
+        base = _crash_private_dir() / "crash_logs"
+        base.mkdir(parents=True, exist_ok=True)
+        name = f"alibaba_crash_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        p = base / name
+        p.write_text(text, encoding="utf-8")
+
+        if platform == "android":
+            try:
+                from androidstorage4kivy import SharedStorage  # type: ignore
+                from jnius import autoclass  # type: ignore
+
+                Environment = autoclass("android.os.Environment")
+                ss = SharedStorage()
+                collection = getattr(Environment, "DIRECTORY_DOWNLOADS", None)
+                ss.copy_to_shared(
+                    str(p),
+                    collection=collection,
+                    filepath=os.path.join("iptv dosyalari", name),
+                )
+            except Exception:  # noqa: BLE001
+                pass
+
+        return str(p)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _excepthook(exc_type, exc, tb):
+    text = "".join(traceback.format_exception(exc_type, exc, tb))
+    _write_crash_log(text)
+    sys.__excepthook__(exc_type, exc, tb)
+
+
 class AliBabaApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -33,12 +86,23 @@ class AliBabaApp(MDApp):
         self.theme_cls.primary_palette = "Blue"
         self.theme_cls.theme_style = "Dark"
 
-        kv_path = os.path.join(os.path.dirname(__file__), "alibaba", "ui", "alibaba.kv")
-        Builder.load_file(kv_path)
-        root = Root()
+        try:
+            kv_path = os.path.join(os.path.dirname(__file__), "alibaba", "ui", "alibaba.kv")
+            Builder.load_file(kv_path)
+            root = Root()
 
-        Clock.schedule_once(lambda *_: self._wire(root), 0)
-        return root
+            Clock.schedule_once(lambda *_: self._wire(root), 0)
+            return root
+        except Exception:  # noqa: BLE001
+            err = traceback.format_exc()
+            _write_crash_log(err)
+            print(err)
+            root = Root()
+            scr = Screen(name="error")
+            scr.add_widget(Label(text=err))
+            root.add_widget(scr)
+            root.current = "error"
+            return root
 
     def _wire(self, root: Root):
         self.root = root
@@ -57,4 +121,9 @@ class AliBabaApp(MDApp):
 
 
 if __name__ == "__main__":
-    AliBabaApp().run()
+    sys.excepthook = _excepthook
+    try:
+        AliBabaApp().run()
+    except Exception:  # noqa: BLE001
+        _write_crash_log(traceback.format_exc())
+        raise
