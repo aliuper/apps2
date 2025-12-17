@@ -1,0 +1,328 @@
+#:import MDTopAppBar kivymd.uix.toolbar.MDTopAppBar
+#:import MDScreen kivymd.uix.screen.MDScreen
+#:import MDLabel kivymd.uix.label.MDLabel
+#:import MDRaisedButton kivymd.uix.button.MDRaisedButton
+#:import MDTextField kivymd.uix.textfield.MDTextField
+#:import MDProgressBar kivymd.uix.progressbar.MDProgressBar
+#:import MDScrollView kivymd.uix.scrollview.MDScrollView
+#:import MDList kivymd.uix.list.MDList
+#:import MDBoxLayout kivymd.uix.boxlayout.MDBoxLayout
+#:import MDFlatButton kivymd.uix.button.MDFlatButton
+#:import MDSwitch kivymd.uix.selectioncontrol.MDSwitch
+#:import MDCheckbox kivymd.uix.selectioncontrol.MDCheckbox
+#:import dp kivy.metrics.dp
+
+<Root>:
+    HomeScreen:
+        name: "home"
+    ManualScreen:
+        name: "manual"
+    AutoScreen:
+        name: "auto"
+    GroupSelectScreen:
+        name: "group_select"
+    CountrySelectScreen:
+        name: "auto_country"
+    OutputManualScreen:
+        name: "output_manual"
+    OutputAutoScreen:
+        name: "output_auto"
+
+<HomeScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+        padding: "16dp"
+        spacing: "16dp"
+
+        MDLabel:
+            text: "AliBaba IPTV Grup Editör"
+            halign: "center"
+            font_style: "H5"
+            size_hint_y: None
+            height: self.texture_size[1] + dp(24)
+
+        MDRaisedButton:
+            text: "Manuel Düzenleme"
+            pos_hint: {"center_x": 0.5}
+            on_release: app.root.current = "manual"
+
+        MDRaisedButton:
+            text: "Otomatik Düzenleme"
+            pos_hint: {"center_x": 0.5}
+            on_release: app.root.current = "auto"
+
+        MDLabel:
+            text: app.root.status_text
+            halign: "center"
+
+<ManualScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Manuel"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, 'current', 'home')]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: "16dp"
+            spacing: "12dp"
+
+            MDTextField:
+                id: url_input
+                hint_text: "IPTV linki"
+                mode: "rectangle"
+
+            MDRaisedButton:
+                text: "Analiz Et"
+                pos_hint: {"center_x": 0.5}
+                on_release: root.on_analyze()
+
+            MDProgressBar:
+                value: root.progress * 100
+
+            MDLabel:
+                text: "ETA: " + root.eta_text if root.eta_text else ""
+                halign: "center"
+
+            MDLabel:
+                text: app.root.status_text
+                halign: "center"
+<AutoScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Otomatik"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, 'current', 'home')]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: "16dp"
+            spacing: "12dp"
+
+            MDTextField:
+                id: auto_text
+                hint_text: "Metin veya linkler (alt alta da olabilir)"
+                mode: "rectangle"
+                multiline: True
+                height: "180dp"
+                size_hint_y: None
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                spacing: "12dp"
+                size_hint_y: None
+                height: "48dp"
+
+                MDRaisedButton:
+                    text: "Linkleri Bul"
+                    on_release: root.on_extract()
+
+                MDRaisedButton:
+                    text: "Başlat"
+                    on_release: root.on_start()
+
+            MDLabel:
+                id: found_label
+                text: "Bulunan link: 0"
+                halign: "left"
+
+            MDLabel:
+                id: urls_preview
+                text: ""
+                halign: "left"
+
+            MDProgressBar:
+                value: root.progress * 100
+
+            MDLabel:
+                text: "ETA: " + root.eta_text if root.eta_text else ""
+                halign: "center"
+
+            MDLabel:
+                text: app.root.status_text
+                halign: "center"
+
+<GroupSelectScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Gruplar"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, 'current', 'manual')]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: "12dp"
+            spacing: "8dp"
+
+            MDTextField:
+                id: group_filter
+                hint_text: "Ara (grup)"
+                mode: "rectangle"
+                on_text: root.on_filter()
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                spacing: "8dp"
+                size_hint_y: None
+                height: "48dp"
+
+                MDFlatButton:
+                    text: "Tümü"
+                    on_release: root.select_all()
+
+                MDFlatButton:
+                    text: "Temizle"
+                    on_release: root.clear_all()
+
+                MDRaisedButton:
+                    text: "İleri"
+                    on_release: root.on_next()
+
+            MDLabel:
+                id: summary_label
+                text: ""
+                halign: "left"
+
+            MDScrollView:
+                MDList:
+                    id: group_list
+
+<CountrySelectScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Ülke Seçimi"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, 'current', 'auto')]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: "12dp"
+            spacing: "8dp"
+
+            MDLabel:
+                id: summary_label
+                text: ""
+                halign: "left"
+
+            MDScrollView:
+                MDList:
+                    id: country_list
+
+            MDRaisedButton:
+                text: "İleri"
+                pos_hint: {"center_x": 0.5}
+                on_release: root.on_next()
+
+<OutputManualScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Çıktı"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, 'current', 'group_select')]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: "16dp"
+            spacing: "12dp"
+
+            MDTextField:
+                id: label_input
+                hint_text: "Dosya etiketi (ör: alibaba)"
+                mode: "rectangle"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                spacing: "12dp"
+                size_hint_y: None
+                height: "48dp"
+
+                MDCheckbox:
+                    id: ext_m3u
+                    active: True
+
+                MDLabel:
+                    text: "m3u"
+                    valign: "middle"
+
+                MDCheckbox:
+                    id: ext_m3u8
+
+                MDLabel:
+                    text: "m3u8"
+                    valign: "middle"
+
+            MDRaisedButton:
+                text: "Kaydet"
+                pos_hint: {"center_x": 0.5}
+                on_release: root.save()
+
+            MDLabel:
+                text: app.root.status_text
+                halign: "center"
+
+<OutputAutoScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Çıktı (Otomatik)"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, 'current', 'auto_country')]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: "16dp"
+            spacing: "12dp"
+
+            MDTextField:
+                id: label_input
+                hint_text: "Dosya etiketi (ör: alibaba)"
+                mode: "rectangle"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                spacing: "12dp"
+                size_hint_y: None
+                height: "48dp"
+
+                MDLabel:
+                    text: "Tek dosyada birleştir"
+                    halign: "left"
+
+                MDSwitch:
+                    id: combine_switch
+                    active: True
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                spacing: "12dp"
+                size_hint_y: None
+                height: "48dp"
+
+                MDCheckbox:
+                    id: ext_m3u
+                    active: True
+
+                MDLabel:
+                    text: "m3u"
+                    valign: "middle"
+
+                MDCheckbox:
+                    id: ext_m3u8
+
+                MDLabel:
+                    text: "m3u8"
+                    valign: "middle"
+
+            MDRaisedButton:
+                text: "Kaydet"
+                pos_hint: {"center_x": 0.5}
+                on_release: root.save()
+
+            MDLabel:
+                text: app.root.status_text
+                halign: "center"
