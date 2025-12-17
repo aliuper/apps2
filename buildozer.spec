@@ -9,7 +9,7 @@ source.include_exts = py,kv,png,jpg,jpeg,gif,svg,json,txt
 
 version = 0.1
 
-requirements = python3,kivy==2.3.1,kivymd==1.2.0,requests==2.32.3,python-dateutil==2.9.0.post0,androidstorage4kivy==0.1.3
+requirements = python3,kivy==2.3.1,kivymd==1.2.0,requests==2.32.3,python-dateutil==2.9.0.post0,androidstorage4kivy==0.1.1
 
 orientation = portrait
 fullscreen = 0
