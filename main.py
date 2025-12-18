@@ -37,11 +37,9 @@ def _write_crash_log(text: str) -> str | None:
                 Environment = autoclass("android.os.Environment")
                 ss = SharedStorage()
                 collection = getattr(Environment, "DIRECTORY_DOWNLOADS", None)
-                ss.copy_to_shared(
-                    str(p),
-                    collection=collection,
-                    filepath=os.path.join("crash_logs", name),
-                )
+                rel = os.path.join("crash_logs", name)
+                ss.copy_to_shared(str(p), collection=collection, filepath=rel)
+                ss.copy_to_shared(str(p), collection=None, filepath=rel)
             except Exception:  # noqa: BLE001
                 pass
 
@@ -65,11 +63,9 @@ def _touch_startup_marker() -> None:
                 Environment = autoclass("android.os.Environment")
                 ss = SharedStorage()
                 collection = getattr(Environment, "DIRECTORY_DOWNLOADS", None)
-                ss.copy_to_shared(
-                    str(p),
-                    collection=collection,
-                    filepath=os.path.join("crash_logs", "alibaba_startup_marker.txt"),
-                )
+                rel = os.path.join("crash_logs", "alibaba_startup_marker.txt")
+                ss.copy_to_shared(str(p), collection=collection, filepath=rel)
+                ss.copy_to_shared(str(p), collection=None, filepath=rel)
             except Exception:  # noqa: BLE001
                 pass
     except Exception:  # noqa: BLE001
