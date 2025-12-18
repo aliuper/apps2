@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
+import signal
 import traceback
 from datetime import datetime
 from pathlib import Path
+import faulthandler
 
 
 def _is_android() -> bool:
@@ -48,6 +50,65 @@ def _write_crash_log(text: str) -> str | None:
         return None
 
 
+def _touch_startup_marker() -> None:
+    try:
+        base = _crash_private_dir() / "crash_logs"
+        base.mkdir(parents=True, exist_ok=True)
+        p = base / "alibaba_startup_marker.txt"
+        p.write_text(datetime.now().isoformat(), encoding="utf-8")
+
+        if _is_android():
+            try:
+                from androidstorage4kivy import SharedStorage  # type: ignore
+                from jnius import autoclass  # type: ignore
+
+                Environment = autoclass("android.os.Environment")
+                ss = SharedStorage()
+                collection = getattr(Environment, "DIRECTORY_DOWNLOADS", None)
+                ss.copy_to_shared(
+                    str(p),
+                    collection=collection,
+                    filepath=os.path.join("crash_logs", "alibaba_startup_marker.txt"),
+                )
+            except Exception:  # noqa: BLE001
+                pass
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _setup_faulthandler() -> None:
+    try:
+        base = _crash_private_dir() / "crash_logs"
+        base.mkdir(parents=True, exist_ok=True)
+        p = base / "alibaba_faulthandler.txt"
+        f = open(p, "a", encoding="utf-8")
+        f.write(f"\n=== START {datetime.now().isoformat()} ===\n")
+        f.flush()
+        faulthandler.enable(file=f, all_threads=True)
+        try:
+            faulthandler.register(signal.SIGABRT, file=f, all_threads=True)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            faulthandler.register(signal.SIGILL, file=f, all_threads=True)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            faulthandler.register(signal.SIGFPE, file=f, all_threads=True)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            faulthandler.register(signal.SIGSEGV, file=f, all_threads=True)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            faulthandler.register(signal.SIGBUS, file=f, all_threads=True)
+        except Exception:  # noqa: BLE001
+            pass
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _excepthook(exc_type, exc, tb):
     text = "".join(traceback.format_exception(exc_type, exc, tb))
     _write_crash_log(text)
@@ -55,6 +116,8 @@ def _excepthook(exc_type, exc, tb):
 
 
 sys.excepthook = _excepthook
+_setup_faulthandler()
+_touch_startup_marker()
 
 from kivy.lang import Builder
 from kivy.clock import Clock
