@@ -6,36 +6,16 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from kivy.lang import Builder
-from kivy.clock import Clock
-from kivy.properties import StringProperty
-from kivy.uix.label import Label
-from kivy.uix.screenmanager import Screen
-from kivy.uix.screenmanager import ScreenManager
-from kivy.utils import platform
 
-from kivymd.app import MDApp
-from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDFlatButton
-
-from alibaba.app_state import AppState
-from alibaba.services.storage import StorageService
-from alibaba.services.iptv import IPTVService
-from alibaba.ui import screens as _screens  # noqa: F401
-
-
-class Root(ScreenManager):
-    status_text = StringProperty("")
+def _is_android() -> bool:
+    return bool(os.environ.get("ANDROID_PRIVATE") or os.environ.get("ANDROID_ARGUMENT"))
 
 
 def _crash_private_dir() -> Path:
-    if platform == "android":
-        try:
-            from android.storage import app_storage_path  # type: ignore
-
-            return Path(app_storage_path())
-        except Exception:  # noqa: BLE001
-            pass
+    if _is_android():
+        p = os.environ.get("ANDROID_PRIVATE")
+        if p:
+            return Path(p)
     return Path.home() / ".alibaba"
 
 
@@ -47,7 +27,7 @@ def _write_crash_log(text: str) -> str | None:
         p = base / name
         p.write_text(text, encoding="utf-8")
 
-        if platform == "android":
+        if _is_android():
             try:
                 from androidstorage4kivy import SharedStorage  # type: ignore
                 from jnius import autoclass  # type: ignore
@@ -58,7 +38,7 @@ def _write_crash_log(text: str) -> str | None:
                 ss.copy_to_shared(
                     str(p),
                     collection=collection,
-                    filepath=os.path.join("iptv dosyalari", name),
+                    filepath=os.path.join("crash_logs", name),
                 )
             except Exception:  # noqa: BLE001
                 pass
@@ -72,6 +52,29 @@ def _excepthook(exc_type, exc, tb):
     text = "".join(traceback.format_exception(exc_type, exc, tb))
     _write_crash_log(text)
     sys.__excepthook__(exc_type, exc, tb)
+
+
+sys.excepthook = _excepthook
+
+from kivy.lang import Builder
+from kivy.clock import Clock
+from kivy.properties import StringProperty
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
+from kivy.uix.screenmanager import ScreenManager
+
+from kivymd.app import MDApp
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.button import MDFlatButton
+
+from alibaba.app_state import AppState
+from alibaba.services.storage import StorageService
+from alibaba.services.iptv import IPTVService
+from alibaba.ui import screens as _screens  # noqa: F401
+
+
+class Root(ScreenManager):
+    status_text = StringProperty("")
 
 
 class AliBabaApp(MDApp):
@@ -121,7 +124,6 @@ class AliBabaApp(MDApp):
 
 
 if __name__ == "__main__":
-    sys.excepthook = _excepthook
     try:
         AliBabaApp().run()
     except Exception:  # noqa: BLE001
